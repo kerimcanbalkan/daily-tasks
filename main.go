@@ -3,7 +3,7 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 */
 package main
 
-import "github.com/kerimcanbalkan/tasks/cmd"
+import "github.com/kerimcanbalkan/daily-tasks/cmd"
 
 func main() {
 	cmd.ResetTasks()
