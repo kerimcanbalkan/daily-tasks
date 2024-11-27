@@ -1,5 +1,5 @@
 /*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
+Copyright © 2024 Kerimcan Balkan kerimcanbalkan@gmail.com
 */
 package cmd
 
@@ -8,6 +8,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+
+	"github.com/kerimcanbalkan/daily-tasks/task"
 )
 
 // statusCmd represents the status command
@@ -15,12 +17,14 @@ var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Show the current task status",
 	Run: func(cmd *cobra.Command, args []string) {
-		tasks, err := LoadTasks()
+		// Load the tasks from the tasks file
+		tasks, err := task.LoadTasks()
 		if err != nil {
 			fmt.Println("error loading tasks")
 			os.Exit(1)
 		}
 
+		// Count the incomplete tasks
 		incompleteCount := 0
 		for _, task := range tasks {
 			if !task.Complete {
@@ -28,8 +32,9 @@ var statusCmd = &cobra.Command{
 			}
 		}
 
+		// Print how many incomplete tasks are there
 		if incompleteCount == 0 {
-			fmt.Println("No daily tasks")
+			fmt.Println("No incomplete tasks")
 		} else {
 			fmt.Printf("%d incomplete task(s)\n", incompleteCount)
 		}
@@ -38,14 +43,4 @@ var statusCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(statusCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// statusCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// statusCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

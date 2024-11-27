@@ -1,6 +1,6 @@
-// Package cmd provides functionality for managing and  reseting tasks.
+// Package task provides functionality for managing and  reseting tasks.
 // Tasks are stored as JSON in a file located in the user's home directory
-package cmd
+package task
 
 import (
 	"encoding/json"
