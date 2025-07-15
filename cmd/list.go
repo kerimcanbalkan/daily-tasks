@@ -42,12 +42,12 @@ var listCmd = &cobra.Command{
 		}
 
 		// Loop through the tasks and format each on for display
-		for i, task := range tasks {
+		for _, task := range tasks {
 			formattedString := fmt.Sprintf(
 				"%d\t%s\t%s\t%t\n",
-				i+1,
+				task.ID,
 				task.Description,
-				task.CreatedAt.Format("15:04"),
+				task.CreatedAt.Local().Format("15:04"),
 				task.Complete,
 			)
 			if _, err := writer.Write([]byte(formattedString)); err != nil {

@@ -3,100 +3,102 @@
 package task
 
 import (
-	"encoding/json"
-	"os"
-	"path/filepath"
+	"log"
 	"time"
+
+	"github.com/kerimcanbalkan/daily-tasks/db"
 )
 
 // Task represents a single task with a description, completion status, and creation time.
 type Task struct {
-	Description string    `json:"description"`
-	Complete    bool      `json:"complete"`
-	CreatedAt   time.Time `json:"createdAt"`
+	ID          int64
+	Description string
+	Complete    bool
+	CreatedAt   time.Time
 }
 
-const taskFileName = ".tasks.json"
-
-// GetTaskFilePath returns the full path to the file where tasks are stored.
-// It locates the file int the user's home directory.
-func GetTaskFilePath() string {
-	// Get user's home directory
-	home, err := os.UserHomeDir()
+func (t Task) SaveTask() (int64, error) {
+	db, err := db.DBConnnect()
 	if err != nil {
-		panic(err)
+		return -1, err
 	}
-	// Combine home directory path with the task file name
-	return filepath.Join(home, taskFileName)
+	// Use Option A (SQLite default) or B (Go UTC timestamp)
+	t.CreatedAt = time.Now().UTC()
+	res, err := db.Exec(
+		`INSERT INTO tasks (description, complete, created_at) VALUES (?, ?, ?)`,
+		t.Description, t.Complete, t.CreatedAt.Format(time.RFC3339),
+	)
+	if err != nil {
+		return -1, err
+	}
+
+	return res.LastInsertId()
 }
 
-// LoadTasks reads the task file and returns a list of tasks.
-// If the task file does not exist, it returns an empty task list
-func LoadTasks() ([]Task, error) {
-	// Get  the path to the task file
-	filePath := GetTaskFilePath()
+func CompleteTask(id int) error {
+	db, err := db.DBConnnect()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
 
-	// Check if the task file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return []Task{}, nil // No tasks yet
+	_, err = db.Exec(
+		"UPDATE tasks SET complete = ? WHERE id = ?",
+		1, id,
+	)
+	if err != nil {
+		return err
 	}
 
-	// Read the file content
-	data, err := os.ReadFile(filePath)
+	return nil
+}
+
+func DeleteTask(id int) error {
+	db, err := db.DBConnnect()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	_, err = db.Exec(
+		"DELETE FROM TASKS WHERE id = ?",
+		id,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func LoadTasks() ([]Task, error) {
+	db, err := db.DBConnnect()
 	if err != nil {
 		return nil, err
 	}
+	defer db.Close()
 
-	// Unmarshal JSON data into a slice of tasks
+	rows, err := db.Query(`
+  SELECT id, description, complete, created_at
+  FROM tasks
+  WHERE date(created_at, 'localtime') = date('now', 'localtime')
+`)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer rows.Close()
+
 	var tasks []Task
-	err = json.Unmarshal(data, &tasks)
-	return tasks, err
-}
-
-// SaveTasks writes the provided list of tasks to the task file.
-// Tasks are saved in a human-readable indented JSON format.
-func SaveTasks(tasks []Task) error {
-	// Marshal the tasks inot an indented JSON string
-	data, err := json.MarshalIndent(tasks, "", " ")
-	if err != nil {
-		return err
-	}
-
-	// Write the JSON data to the task file
-	return os.WriteFile(GetTaskFilePath(), data, 0644)
-}
-
-// ResetTasks removes tasks that are outdated, retaining only tasks created today.
-// A task is considered outdated if its creation date is before the current day.
-func ResetTasks() error {
-	// Load the existing tasks from the task file
-	tasks, err := LoadTasks()
-	if err != nil {
-		return err
-	}
-
-	// Get the current date at midnight
-	now := time.Now()
-	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-
-	// Filter tasks to retain only the ones created on or after today
-	var updatedTasks []Task
-	for _, task := range tasks {
-		taskDate := time.Date(
-			task.CreatedAt.Year(),
-			task.CreatedAt.Month(),
-			task.CreatedAt.Day(),
-			0,
-			0,
-			0,
-			0,
-			task.CreatedAt.Location(),
-		)
-		if !taskDate.Before(today) {
-			updatedTasks = append(updatedTasks, task)
+	for rows.Next() {
+		var t Task
+		var created string
+		err := rows.Scan(&t.ID, &t.Description, &t.Complete, &created)
+		if err != nil {
+			log.Fatal(err)
 		}
+		t.CreatedAt, _ = time.Parse(time.RFC3339, created)
+		tasks = append(tasks, t)
 	}
 
-	// Save the filtered tasks
-	return SaveTasks(updatedTasks)
+	return tasks, nil
 }
