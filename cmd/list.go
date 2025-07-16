@@ -16,13 +16,24 @@ import (
 // listCmd represents the list command
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "list all tasks",
+	Short: "list all tasks for that day",
 	Run: func(cmd *cobra.Command, args []string) {
-		// Load tasks from the tasks file
-		tasks, err := task.LoadTasks()
-		if err != nil {
-			fmt.Println("Error loading tasks", err)
-			os.Exit(1)
+		var tasks []task.Task
+		var err error
+
+		if args[0] != "" && args[0] == "all" {
+			tasks, err = task.GetAllTasks()
+			if err != nil {
+				fmt.Println("Error loading tasks", err)
+				os.Exit(1)
+			}
+		} else {
+			// Load tasks from the tasks file
+			tasks, err = task.LoadTasks()
+			if err != nil {
+				fmt.Println("Error loading tasks", err)
+				os.Exit(1)
+			}
 		}
 
 		// Check if there are no tasks to display

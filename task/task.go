@@ -91,12 +91,40 @@ func LoadTasks() ([]Task, error) {
 	var tasks []Task
 	for rows.Next() {
 		var t Task
-		var created string
-		err := rows.Scan(&t.ID, &t.Description, &t.Complete, &created)
+		var timeStr string
+		err := rows.Scan(&t.ID, &t.Description, &t.Complete, &timeStr)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
-		t.CreatedAt, _ = time.Parse(time.RFC3339, created)
+		t.CreatedAt, _ = time.Parse(time.RFC3339, timeStr)
+		tasks = append(tasks, t)
+	}
+
+	return tasks, nil
+}
+
+func GetAllTasks() ([]Task, error) {
+	db, err := db.DBConnnect()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	rows, err := db.Query("Select * FROM tasks")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tasks []Task
+	for rows.Next() {
+		var t Task
+		var timeStr string
+		err := rows.Scan(&t.ID, &t.Description, &t.Complete, &timeStr)
+		if err != nil {
+			return nil, err
+		}
+		t.CreatedAt, _ = time.Parse(time.RFC3339, timeStr)
 		tasks = append(tasks, t)
 	}
 
