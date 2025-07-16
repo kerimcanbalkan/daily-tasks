@@ -5,8 +5,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-	"time"
 
 	"github.com/spf13/cobra"
 
@@ -21,25 +19,15 @@ var addCmd = &cobra.Command{
 		// Get task description given by user
 		taskDesc := args[0]
 
-		// Load tasks from the tasks file
-		tasks, err := task.LoadTasks()
-		if err != nil {
-			fmt.Println("Error loading tasks: ")
-			os.Exit(1)
-		}
+		task := task.Task{Description: taskDesc, Complete: false}
 
-		// Add new task to the tasks
-		tasks = append(
-			tasks,
-			task.Task{Description: taskDesc, Complete: false, CreatedAt: time.Now()},
-		)
-		if err := task.SaveTasks(tasks); err != nil {
-			fmt.Println("Error saving task", err)
-			os.Exit(1)
+		id, err := task.SaveTask()
+		if err != nil {
+			fmt.Errorf("Someting went wrong! Could not create task")
 		}
 
 		// Print a message if no errors happened
-		fmt.Println("Task added", taskDesc)
+		fmt.Println("Task added with ID", id)
 	},
 }
 
